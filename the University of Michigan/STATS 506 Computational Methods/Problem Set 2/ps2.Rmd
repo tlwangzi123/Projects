@@ -1,0 +1,585 @@
+---
+title: "Stats 506, F18, Problem Set 2"
+author: "Zi Wang, tlwangzi@umich.edu"
+date: "10/19/2018"
+output: pdf_document
+---
+## Question 1 
+
+```{r setup_q1, echo = FALSE, include = FALSE}
+suppressMessages(library("tidyverse"))
+recs_tib = readr::read_delim("./recs2015_usage.csv",delim = ",")
+recs_2015 = recs_tib %>%
+  mutate(lwr = Estimate-qnorm(.975)*SE,upr = Estimate+qnorm(.975)*SE) %>%
+  select(Kind,Estimate,lwr,upr)
+```
+
+```{r print_q1, echo = FALSE, fig.height = 4, fig.cap = cap}
+cap = "Estimates and 95% confidence intervals of the four national means
+       for residential energy consumption"
+cols = c('Total','Estimate','lwr of 95% CI','upr of 95% CI')
+knitr::kable(recs_2015,caption = cap,col.names = cols)
+```
+
+\pagebreak
+
+## Question 2
+
+### a.
+
+Use "import" command to read both data sets into Stata
+Use "merge" command to merge them together by the participant id SEQN.
+
+Stata code:  
+import sasxport "https://wwwn.cdc.gov/Nchs/Nhanes/2005-2006/OHX_D.XPT"  
+save oral, replace  
+import sasxport "https://wwwn.cdc.gov/Nchs/Nhanes/2005-2006/DEMO_D.XPT"  
+merge 1:1 seqn using oral  
+save syn, replace  
+
+### b.
+
+The summary of the model:
+\begin{tabular}{lc} \hline
+ & (1) \\
+VARIABLES & Model sign~ridagemn \\ \hline
+ &  \\
+ridagemn & 0.0697*** \\
+ & (0.00257) \\
+Constant & -8.359*** \\
+ & (0.323) \\
+ &  \\
+ Observations & 7,563 \\ \hline
+\multicolumn{2}{c}{ Standard errors in parentheses} \\
+\multicolumn{2}{c}{ *** p$<$0.01, ** p$<$0.05, * p$<$0.1} \\
+\end{tabular}
+
+The BIC of the model: 1533.407
+
+The age at which 25% of individuals lose their primary upper right 2nd bicuspid: 104
+
+The age at which 50% of individuals lose their primary upper right 2nd bicuspid: 120
+
+The age at which 75% of individuals lose their primary upper right 2nd bicuspid: 136
+
+The range of representative age values: 8, 9, 10, 11, 12
+
+### c.
+Add gender to the model and show the summary:
+\begin{tabular}{lc} \hline
+ & (1) \\
+VARIABLES & Model ridagemn~riagendr \\ \hline
+ &  \\
+ridagemn & 0.0697*** \\
+ & (0.00257) \\
+2.riagendr & 0.0702 \\
+ & (0.132) \\
+Constant & -8.397*** \\
+ & (0.332) \\
+ &  \\
+ Observations & 7,563 \\ \hline
+\multicolumn{2}{c}{ Standard errors in parentheses} \\
+\multicolumn{2}{c}{ *** p$<$0.01, ** p$<$0.05, * p$<$0.1} \\
+\end{tabular}
+
+The BIC: 1542.055  
+It is higher than 1533.407, so do not retain gender.
+
+
+Add category Mexican American to the model and show the summary:
+\begin{tabular}{lc} \hline
+ & (1) \\
+VARIABLES & Model sign~ridagemn+mex \\ \hline
+ &  \\
+ridagemn & 0.0704*** \\
+ & (0.00265) \\
+1.mex & 0.0386 \\
+ & (0.143) \\
+Constant & -8.459*** \\
+ & (0.337) \\
+ &  \\
+ Observations & 7,246 \\ \hline
+\multicolumn{2}{c}{ Standard errors in parentheses} \\
+\multicolumn{2}{c}{ *** p$<$0.01, ** p$<$0.05, * p$<$0.1} \\
+\end{tabular}
+
+The BIC: 1542.285  
+It is higher than 1533.407, so do not retain category Mexican American.
+
+
+Add category Non-Hispanic Black to the model and show the summary:
+\begin{tabular}{lc} \hline
+ & (1) \\
+VARIABLES & Model sign~ridagemn+black \\ \hline
+ &  \\
+ridagemn & 0.0701*** \\
+ & (0.00259) \\
+1.black & 0.521*** \\
+ & (0.145) \\
+Constant & -8.567*** \\
+ & (0.334) \\
+ &  \\
+ Observations & 7,563 \\ \hline
+\multicolumn{2}{c}{ Standard errors in parentheses} \\
+\multicolumn{2}{c}{ *** p$<$0.01, ** p$<$0.05, * p$<$0.1} \\
+\end{tabular}
+
+The BIC: 1529.281  
+It is lower than 1533.407, so retain category Non-Hispanic Black.
+
+
+Add category Other to the model and show the summary:
+\begin{tabular}{lc} \hline
+ & (1) \\
+VARIABLES & Model sign~ridagemn+black+other \\ \hline
+ &  \\
+ridagemn & 0.0703*** \\
+ & (0.00260) \\
+1.black & 0.567*** \\
+ & (0.149) \\
+1.other & 0.337 \\
+ & (0.233) \\
+Constant & -8.636*** \\
+ & (0.339) \\
+ &  \\
+ Observations & 7,563 \\ \hline
+\multicolumn{2}{c}{ Standard errors in parentheses} \\
+\multicolumn{2}{c}{ *** p$<$0.01, ** p$<$0.05, * p$<$0.1} \\
+\end{tabular}
+
+The BIC: 1536.103  
+It is higher than 1529.281, so do not retain category Other.
+
+Add poverty income ratio to the model:
+\begin{tabular}{lc} \hline
+ & (1) \\
+VARIABLES & Model sign~ridagemn+black+indfmpir \\ \hline
+ &  \\
+ridagemn & 0.0714*** \\
+ & (0.00271) \\
+1.black & 0.495*** \\
+ & (0.149) \\
+indfmpir & -0.119*** \\
+ & (0.0454) \\
+Constant & -8.460*** \\
+ & (0.351) \\
+ &  \\
+ Observations & 7,246 \\ \hline
+\multicolumn{2}{c}{ Standard errors in parentheses} \\
+\multicolumn{2}{c}{ *** p$<$0.01, ** p$<$0.05, * p$<$0.1} \\
+\end{tabular}
+
+The BIC: 1462.895  
+It is lower than 1529.281, so retain poverty income ratio.
+
+
+The final model:
+\begin{tabular}{lc} \hline
+ & (1) \\
+VARIABLES & Model sign~ridagemn+black+indfmpir \\ \hline
+ &  \\
+ridagemn & 0.0714*** \\
+ & (0.00271) \\
+1.black & 0.495*** \\
+ & (0.149) \\
+indfmpir & -0.119*** \\
+ & (0.0454) \\
+Constant & -8.460*** \\
+ & (0.351) \\
+ &  \\
+ Observations & 7,246 \\ \hline
+\multicolumn{2}{c}{ Standard errors in parentheses} \\
+\multicolumn{2}{c}{ *** p$<$0.01, ** p$<$0.05, * p$<$0.1} \\
+\end{tabular}
+
+
+### d.
+#### 1.
+Adjusted Predictions at the mean (for other values) at the representative ages
+(From 8 to 12):
+\begin{tabular}{lc} \hline
+ & (1) \\
+VARIABLES & Adjusted predictions \\ \hline
+ &  \\
+1bn.\_at & 0.146*** \\
+ & (0.0128) \\
+2.\_at & 0.287*** \\
+ & (0.0167) \\
+3.\_at & 0.486*** \\
+ & (0.0174) \\
+4.\_at & 0.690*** \\
+ & (0.0155) \\
+5.\_at & 0.840*** \\
+ & (0.0118) \\
+ &  \\
+ Observations & 7,246 \\ \hline
+\multicolumn{2}{c}{ Standard errors in parentheses} \\
+\multicolumn{2}{c}{ *** p$<$0.01, ** p$<$0.05, * p$<$0.1} \\
+\end{tabular}
+
+The plot can be seen from the corresponding "marginsplot" command in ps2_q2.do
+
+#### 2.
+The marginal effects at the mean of black 
+at the same representative ages:
+\begin{tabular}{lcc} \hline
+ & (1) & (2) \\
+VARIABLES & The marginal effects at the mean & The marginal effects at the mean \\ \hline
+ &  &  \\
+1bno.\_at & 0 &  \\
+ & (0) &  \\
+2o.\_at & 0 &  \\
+ & (0) &  \\
+3o.\_at & 0 &  \\
+ & (0) &  \\
+4o.\_at & 0 &  \\
+ & (0) &  \\
+5o.\_at & 0 &  \\
+ & (0) &  \\
+1bn.\_at &  & 0.0668*** \\
+ &  & (0.0217) \\
+2.\_at &  & 0.106*** \\
+ &  & (0.0328) \\
+3.\_at &  & 0.123*** \\
+ &  & (0.0365) \\
+4.\_at &  & 0.101*** \\
+ &  & (0.0290) \\
+5.\_at &  & 0.0616*** \\
+ &  & (0.0175) \\
+ &  &  \\
+ Observations & 7,246 & 7,246 \\ \hline
+\multicolumn{3}{c}{ Standard errors in parentheses} \\
+\multicolumn{3}{c}{ *** p$<$0.01, ** p$<$0.05, * p$<$0.1} \\
+\end{tabular}
+
+The plot can be seen from the corresponding "marginsplot" command in ps2_q2.do
+
+#### 3.
+Average Marginal Effect of black at the representative ages:
+\begin{tabular}{lcc} \hline
+ & (1) & (2) \\
+VARIABLES & Average marginal effect & Average marginal effect \\ \hline
+ &  &  \\
+1bno.\_at & 0 &  \\
+ & (0) &  \\
+2o.\_at & 0 &  \\
+ & (0) &  \\
+3o.\_at & 0 &  \\
+ & (0) &  \\
+4o.\_at & 0 &  \\
+ & (0) &  \\
+5o.\_at & 0 &  \\
+ & (0) &  \\
+1bn.\_at &  & 0.0671*** \\
+ &  & (0.0217) \\
+2.\_at &  & 0.105*** \\
+ &  & (0.0326) \\
+3.\_at &  & 0.122*** \\
+ &  & (0.0363) \\
+4.\_at &  & 0.100*** \\
+ &  & (0.0289) \\
+5.\_at &  & 0.0619*** \\
+ &  & (0.0176) \\
+ &  &  \\
+ Observations & 7,246 & 7,246 \\ \hline
+\multicolumn{3}{c}{ Standard errors in parentheses} \\
+\multicolumn{3}{c}{ *** p$<$0.01, ** p$<$0.05, * p$<$0.1} \\
+\end{tabular}
+
+The plot can be seen from the corresponding "marginsplot" command in ps2_q2.do
+
+
+### e.
+Compare the two model:
+\begin{tabular}{lcc} \hline
+ & (1) & (2) \\
+VARIABLES & Model sign~ridagemn+black+indfmpir & Model svy:sign~ridagemn+black+indfmpir \\ \hline
+ &  &  \\
+ridagemn & 0.0714*** & 0.0619*** \\
+ & (0.00271) & (0.00723) \\
+1.black & 0.495*** &  \\
+ & (0.149) &  \\
+indfmpir & -0.119*** & -0.0812 \\
+ & (0.0454) & (0.0522) \\
+black &  & 0.543*** \\
+ &  & (0.146) \\
+Constant & -8.460*** & -7.516*** \\
+ & (0.351) & (0.862) \\
+ &  &  \\
+ Observations & 7,246 & 7,246 \\ \hline
+\multicolumn{3}{c}{ Standard errors in parentheses} \\
+\multicolumn{3}{c}{ *** p$<$0.01, ** p$<$0.05, * p$<$0.1} \\
+\end{tabular}
+
+Comments on the differences:
+
+The coefficient of the variable ridagemn is more signficant from the model using svy than the other one.
+
+The coefficient of the variable black is less signficant from the model using svy than the other one.
+
+The coefficient of the variable indfmpir is more signficant from the model using svy than the other one.
+
+The coefficient of the constant is more signficant from the model using svy than the other one.
+
+
+Reason: the coefficient with lower p-value is more significant.
+
+\pagebreak
+
+## Question 3
+
+```{r setup_q3, echo = FALSE, include = FALSE}
+suppressMessages(library("tidyverse"))
+library(margins)
+library(prediction)
+library(foreign)
+source('./ps2_q3.R')
+```
+
+### a.
+
+```{r q3a, eval = FALSE}
+health = read.xport("OHX_D.XPT")
+demo = read.xport("DEMO_D.XPT")
+syn = demo %>%
+  left_join(health,by = 'SEQN')
+```
+
+### b.
+The original model:
+```{r q3b, eval = FALSE}
+log_reg = glm(sign ~ RIDAGEMN,family = binomial(link = 'logit'),
+              data = syn_select)
+```
+
+The summary of the model:
+```{r q3b_sum}
+summary(log_reg)
+```
+
+The BIC of the model:
+```{r q3b_BIC,echo = FALSE}
+BIC_orig
+```
+
+The age at which 25% of individuals lose their primary upper right 2nd bicuspid:
+```{r q3b_25, echo = FALSE} 
+age_25
+```
+
+The age at which 50% of individuals lose their primary upper right 2nd bicuspid:
+```{r q3b_50, echo = FALSE} 
+age_50
+```
+
+The age at which 75% of individuals lose their primary upper right 2nd bicuspid:
+```{r q3b_75, echo = FALSE} 
+age_75
+```
+
+The lower bound and upper bound of the range of representative age values:
+```{r q3b_range, echo = FALSE}
+c(year_25,year_75)
+```
+
+
+### c.
+Add gender to the model and show the summary:
+```{r q3c_gen, eval = FALSE}
+log_reg_gen = glm(sign ~ RIDAGEMN + RIAGENDR,
+                  family = binomial(link = 'logit'),data = syn_select)
+```
+
+```{r q3c_gen_sum}
+summary(log_reg_gen)
+```
+
+the BIC:
+```{r q3c_BIC_gen, echo = FALSE}
+BIC_gen
+```
+ 
+It is higher than BIC_orig = 1533.407, so do not retain gender.
+
+
+Add category Mexican American to the model and show the summary:
+```{r q3c_W_Mex, eval = FALSE}
+log_reg_W_Mex = glm(sign ~ RIDAGEMN + Mex,
+                    family = binomial(link = 'logit'),data = syn_select_1)
+```
+
+```{r q3c_W_Mex_sum}
+summary(log_reg_W_Mex)
+```
+
+the BIC:
+```{r q3c_BIC_W_Mex, echo = FALSE}
+BIC_W_Mex
+```
+ 
+It is higher than BIC_orig = 1533.407, so do not retain category Mexican American.
+
+
+Add category Non-Hispanic Black to the model and show the summary:
+```{r q3c_W_Black, eval = FALSE}
+log_reg_W_Black = glm(sign ~ RIDAGEMN + Black,
+                      family = binomial(link = 'logit'),data = syn_select_1)
+```
+
+```{r q3c_W_Black_sum}
+summary(log_reg_W_Black)
+```
+
+the BIC:
+```{r q3c_BIC_W_Black}
+BIC_W_Black
+```
+ 
+It is lower than BIC_orig = 1533.407, which means it improves the BIC, 
+so retain category Non-Hispanic Black.
+
+
+Add category Other to the model and show the summary:
+```{r q3c_W_Black_Other, eval = FALSE}
+log_reg_W_Black_Other = glm(sign ~ RIDAGEMN + Black + Other,
+                            family = binomial(link = 'logit'),
+                            data = syn_select_1)
+```
+
+```{r q3c_W_Black_Other_sum}
+summary(log_reg_W_Black_Other)
+```
+
+the BIC:
+```{r q3c_BIC_W_Black_Other}
+BIC_W_Black_Other
+```
+ 
+It is higher than BIC_W_Black = 1529.281, so do not retain category Other.
+
+Add poverty income ratio(PIR) to the model: 
+```{r q3c_W_Black_PIR, eval = FALSE}
+log_reg_W_Black_PIR = glm(sign ~ RIDAGEMN + Black + INDFMPIR,
+                          family = binomial(link = 'logit'),
+                          data = syn_select_2)
+```
+
+```{r q3c_W_Black_PIR_sum}
+summary(log_reg_W_Black_PIR)
+```
+
+the BIC:
+```{r q3c_BIC_W_Black_PIR}
+BIC_W_Black_PIR
+```
+
+It is lower than BIC_W_Black = 1529.281, which means it improves the BIC, 
+so retain category poverty income ratio.
+
+The final model: sign ~ RIDAGEMN + Black + INDFMPIR
+```{r q3c_Final, echo = FALSE}
+summary(log_reg_W_Black_PIR)
+```
+
+
+### d.
+#### 1.
+Adjusted Predictions at the mean (for other values) at the representative ages
+(From 8 to 12):
+
+```{r q3d_apm_table, echo =FALSE, fig.height = 4, fig.cap = cap}
+syn_select_apm_1 = syn_select_apm %>%
+  mutate(fit=adp$fit, se=adp$se.fit, lwr=fit - 2*se, upr=fit + 2*se,
+         age = RIDAGEMN/12)
+syn_apm_tab = syn_select_apm_1 %>%
+  select(age, fit)
+cap = "Adjusted predictions at the mean (for other values) 
+           at each of the representative age"
+cols=c('Age','Adjusted predictions at the mean')
+knitr::kable(syn_apm_tab,caption = cap,col.names = cols)
+```
+
+```{r q3d_apm_plot, echo =FALSE}
+syn_select_apm %>%
+  mutate(fit=adp$fit, se=adp$se.fit, lwr=fit - 2*se, upr=fit + 2*se,
+         age = RIDAGEMN/12) %>%
+  mutate(age=factor(age,age[order(fit)])) %>% # order
+  ggplot(aes(y=age, x=fit)) +
+  geom_point() + 
+  geom_errorbarh(aes(xmin=lwr, xmax=upr), height=.1) + 
+  geom_vline(aes(xintercept = fit), lty = 'dashed', color='grey', alpha =.5) + 
+  xlab('Adjusted predictions at the mean') +
+  ggtitle('Adjusted predictions at the mean (for other values) 
+           at each of the representative ages') +
+  theme_bw() +
+  xlim(c(0,1))
+```
+
+#### 2.
+The marginal effects at the mean of Black at the same representative ages:
+
+```{r q3d_mem_table, echo =FALSE, fig.height = 4, fig.cap = cap}
+syn_select_mem_1 = syn_select_mem %>%  
+  distinct(RIDAGEMN,INDFMPIR) %>%
+  mutate(fit=amm[,1], se=amm[,2], lwr=fit - 2*se, upr=fit + 2*se,
+         age = RIDAGEMN/12)
+syn_mem_tab = syn_select_mem_1 %>%
+  select(age, fit)
+cap = "The marginal effects at the mean of categorical variables 
+           ridrethBlack at the same representative age"
+cols=c('Age','The marginal effects at the mean')
+knitr::kable(syn_mem_tab,caption = cap,col.names = cols)
+```
+
+```{r q3d_mem_plot, echo = FALSE}
+syn_select_mem %>% 
+  distinct(RIDAGEMN,INDFMPIR) %>%
+  mutate(fit=amm[,1], se=amm[,2], lwr=fit - 2*se, upr=fit + 2*se,
+         age = RIDAGEMN/12) %>%
+  mutate(age=factor(age,age[order(fit)])) %>% # order
+  ggplot(aes(y=age, x=fit)) +
+  geom_point() + 
+  geom_errorbarh(aes(xmin=lwr, xmax=upr), height=.1) + 
+  geom_vline( aes( xintercept = fit), lty = 'dashed', color='grey', alpha =.5 ) + 
+  xlab('The marginal effects at the mean') +
+  ggtitle('The marginal effects at the mean of categorical variables 
+           ridrethBlack at the same representative ages') +
+  theme_bw() +
+  xlim(c(0,0.30))
+```
+
+#### 3.
+Use "margins" command in the "margins" package with the "at" option:
+```{r q3d_ame}
+q_tot = c(96,108,120,132,144)
+mem0 = margins(log_reg_W_Black_PIR_1, at = list(RIDAGEMN = q_tot))
+mem0
+```
+
+So, Average Marginal Effect of Black at the representative ages:
+
+```{r q3d_ame_table, echo =FALSE, fig.height = 4, fig.cap = cap}
+syn_select_ame_1 = syn_select_ame %>%  
+  mutate(fit=Black, se=ame[,2], lwr=fit - 2*se, upr=fit + 2*se,
+         age = RIDAGEMN/12)
+syn_ame_tab = syn_select_ame_1 %>%
+  select(age, fit)
+cap = "The average marginal effect of Black at the representative ages"
+cols=c('Age','The average marginal effect')
+knitr::kable(syn_ame_tab,caption = cap,col.names = cols)
+```
+
+```{r q3d_ame_plot, echo = FALSE}
+syn_select_ame %>% 
+  mutate(fit=Black, se=ame[,2], lwr=fit - 2*se, upr=fit + 2*se,
+         age = RIDAGEMN/12) %>%
+  mutate(age=factor(age,age[order(fit)])) %>% # order
+  ggplot(aes(y=age, x=fit)) +
+  geom_point() + 
+  geom_errorbarh(aes(xmin=lwr, xmax=upr), height=.1) + 
+  geom_vline( aes( xintercept = fit), lty = 'dashed', color='grey', alpha =.5 ) + 
+  xlab('The average marginal effect') +
+  ggtitle('The average marginal effect of Black at the representative ages') +
+  theme_bw() +
+  xlim(c(0,0.30))
+```

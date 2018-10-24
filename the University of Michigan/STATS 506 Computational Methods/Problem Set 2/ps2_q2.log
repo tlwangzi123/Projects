@@ -1,0 +1,649 @@
+--------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  F:\Program Files\Stata15\ps2_q2.log
+  log type:  text
+ opened on:  19 Oct 2018, 16:49:17
+
+. 
+. // Obtain or restore data
+. clear
+
+. import sasxport "https://wwwn.cdc.gov/Nchs/Nhanes/2005-2006/OHX_D.XPT"
+
+. save oral, replace
+file oral.dta saved
+
+. import sasxport "https://wwwn.cdc.gov/Nchs/Nhanes/2005-2006/DEMO_D.XPT"
+
+. 
+. /* a. */
+. // Merge these two data
+. merge 1:1 seqn using oral
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                         2,043
+        from master                     2,043  (_merge==1)
+        from using                          0  (_merge==2)
+
+    matched                             8,305  (_merge==3)
+    -----------------------------------------
+
+. save syn, replace
+file syn.dta saved
+
+. 
+. /* b. */
+. * Manipulate data
+. // recode permanent root fragments as permanent and 
+. // drop individuals for whom this tooth was not assessed
+. drop if (ohx04htc==9)|(ohx04htc==.)|(ridagemn==.)
+(2,785 observations deleted)
+
+. 
+. // Convert ohx04htc to a two-values variable(represents the pro) to 
+. // use logitic regression
+. generate sign= (ohx04htc !=1)
+
+. 
+. // Collapse ‘Other Hispanic’ and ‘Other’, label the four levels
+. keep sign ridagemn ridreth1 riagendr indfmpir sdmvpsu wtmec2yr sdmvstra
+
+. sort ridagemn
+
+. replace ridreth1 = 2 if ridreth1 == 5 
+(354 real changes made)
+
+. label define ridreth1_codes 1 "Mex" 2 "Other" 3 "White" 4 "Black", replace
+
+. label values ridreth1 ridreth1_codes
+
+. 
+. // Label gender 
+. label define riagendr_codes 1 "Male" 2 "Female", replace
+
+. label values riagendr riagendr_codes
+
+. save syn_select, replace
+file syn_select.dta saved
+
+. 
+. // Logistic regression to estimate the relationship between age (in months) and 
+. // variable ohx04htc: the probability that an individual has lose the
+. // upper right 2nd bicuspid
+. logit sign ridagemn
+
+Iteration 0:   log likelihood = -2881.6973  
+Iteration 1:   log likelihood = -2107.4429  
+Iteration 2:   log likelihood = -962.00048  
+Iteration 3:   log likelihood = -765.23661  
+Iteration 4:   log likelihood = -757.79738  
+Iteration 5:   log likelihood = -757.77236  
+Iteration 6:   log likelihood = -757.77236  
+
+Logistic regression                             Number of obs     =      7,563
+                                                LR chi2(1)        =    4247.85
+                                                Prob > chi2       =     0.0000
+Log likelihood = -757.77236                     Pseudo R2         =     0.7370
+
+------------------------------------------------------------------------------
+        sign |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    ridagemn |   .0696778   .0025658    27.16   0.000     .0646489    .0747067
+       _cons |  -8.359362    .323495   -25.84   0.000    -8.993401   -7.725324
+------------------------------------------------------------------------------
+Note: 0 failures and 3168 successes completely determined.
+
+. outreg2 using myreg1.doc, replace ctitle(Model sign~ridagemn)
+myreg1.doc
+dir : seeout
+
+. estat ic
+
+Akaike's information criterion and Bayesian information criterion
+
+-----------------------------------------------------------------------------
+       Model |        Obs  ll(null)  ll(model)      df         AIC        BIC
+-------------+---------------------------------------------------------------
+           . |      7,563 -2881.697  -757.7724       2    1519.545   1533.407
+-----------------------------------------------------------------------------
+               Note: N=Obs used in calculating BIC; see [R] BIC note.
+
+. * BIC: 1533.407
+. 
+. * Estimate the ages at which 25% of individuals 
+. * lose their primary upper right 2nd bicuspid
+. generate age_25 = round((log(0.25/(1-0.25)) - _b[_cons])/_b[ridagemn])
+
+. display age_25
+104
+
+. 
+. * Estimate the ages at which 50% of individuals 
+. * lose their primary upper right 2nd bicuspid
+. generate age_50 = round((log(0.50/(1-0.50)) - _b[_cons])/_b[ridagemn])
+
+. display age_50
+120
+
+. 
+. * Estimate the ages at which 75% of individuals 
+. * lose their primary upper right 2nd bicuspid
+. generate age_75 = round((log(0.75/(1-0.75)) - _b[_cons])/_b[ridagemn])
+
+. display age_75
+136
+
+. 
+. * Taking the floor in years of the 25%-ile
+. generate year_25 = floor(age_25/12)
+
+. display year_25
+8
+
+. 
+. * Taking the celling in years of the 75%-ile
+. generate year_75 = ceil(age_75/12)
+
+. display year_75
+12
+
+. 
+. /* c. */
+. // Add gender to the model
+. logit sign ridagemn i.riagendr
+
+Iteration 0:   log likelihood = -2881.6973  
+Iteration 1:   log likelihood = -2107.4296  
+Iteration 2:   log likelihood = -977.47531  
+Iteration 3:   log likelihood = -767.29902  
+Iteration 4:   log likelihood = -757.68317  
+Iteration 5:   log likelihood = -757.63087  
+Iteration 6:   log likelihood = -757.63086  
+
+Logistic regression                             Number of obs     =      7,563
+                                                LR chi2(2)        =    4248.13
+                                                Prob > chi2       =     0.0000
+Log likelihood = -757.63086                     Pseudo R2         =     0.7371
+
+------------------------------------------------------------------------------
+        sign |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    ridagemn |   .0696983   .0025674    27.15   0.000     .0646663    .0747302
+             |
+    riagendr |
+     Female  |    .070195   .1319718     0.53   0.595    -.1884649    .3288549
+       _cons |  -8.397414   .3320908   -25.29   0.000      -9.0483   -7.746528
+------------------------------------------------------------------------------
+Note: 0 failures and 3172 successes completely determined.
+
+. outreg2 using myreg2.doc, replace ctitle(Model ridagemn~riagendr)
+myreg2.doc
+dir : seeout
+
+. estat ic
+
+Akaike's information criterion and Bayesian information criterion
+
+-----------------------------------------------------------------------------
+       Model |        Obs  ll(null)  ll(model)      df         AIC        BIC
+-------------+---------------------------------------------------------------
+           . |      7,563 -2881.697  -757.6309       3    1521.262   1542.055
+-----------------------------------------------------------------------------
+               Note: N=Obs used in calculating BIC; see [R] BIC note.
+
+. * BIC: 1542.055
+. 
+. // Use White as the reference, Creat other three indicators
+. tab ridreth1, gen(dummy_ridreth1)
+
+Race/Ethnic |
+      ity - |
+     Recode |      Freq.     Percent        Cum.
+------------+-----------------------------------
+        Mex |      1,968       26.02       26.02
+      Other |        588        7.77       33.80
+      White |      2,977       39.36       73.16
+      Black |      2,030       26.84      100.00
+------------+-----------------------------------
+      Total |      7,563      100.00
+
+. generate mex = dummy_ridreth11
+
+. generate black = dummy_ridreth14
+
+. generate other = dummy_ridreth12 
+
+. 
+. // Add category Mexican American
+. logit sign ridagemn i.mex // Mex
+
+Iteration 0:   log likelihood = -2881.6973  
+Iteration 1:   log likelihood = -2107.3637  
+Iteration 2:   log likelihood = -962.18045  
+Iteration 3:   log likelihood = -765.35902  
+Iteration 4:   log likelihood = -757.77196  
+Iteration 5:   log likelihood = -757.74573  
+Iteration 6:   log likelihood = -757.74573  
+
+Logistic regression                             Number of obs     =      7,563
+                                                LR chi2(2)        =    4247.90
+                                                Prob > chi2       =     0.0000
+Log likelihood = -757.74573                     Pseudo R2         =     0.7370
+
+------------------------------------------------------------------------------
+        sign |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    ridagemn |   .0696808   .0025659    27.16   0.000     .0646516    .0747099
+       1.mex |   .0320335   .1388088     0.23   0.817    -.2400267    .3040936
+       _cons |  -8.370769   .3274594   -25.56   0.000    -9.012578   -7.728961
+------------------------------------------------------------------------------
+Note: 0 failures and 3169 successes completely determined.
+
+. outreg2 using myreg3.doc, replace ctitle(Model sign~ridagemn+mex)
+myreg3.doc
+dir : seeout
+
+. estat ic
+
+Akaike's information criterion and Bayesian information criterion
+
+-----------------------------------------------------------------------------
+       Model |        Obs  ll(null)  ll(model)      df         AIC        BIC
+-------------+---------------------------------------------------------------
+           . |      7,563 -2881.697  -757.7457       3    1521.491   1542.285
+-----------------------------------------------------------------------------
+               Note: N=Obs used in calculating BIC; see [R] BIC note.
+
+. * BIC: 1542.285
+. 
+. // Add category Non-Hispanic Black
+. logit sign ridagemn i.black  // Black 
+
+Iteration 0:   log likelihood = -2881.6973  
+Iteration 1:   log likelihood = -2103.4944  
+Iteration 2:   log likelihood = -960.65791  
+Iteration 3:   log likelihood = -759.97969  
+Iteration 4:   log likelihood =  -751.2846  
+Iteration 5:   log likelihood = -751.24373  
+Iteration 6:   log likelihood = -751.24372  
+
+Logistic regression                             Number of obs     =      7,563
+                                                LR chi2(2)        =    4260.91
+                                                Prob > chi2       =     0.0000
+Log likelihood = -751.24372                     Pseudo R2         =     0.7393
+
+------------------------------------------------------------------------------
+        sign |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    ridagemn |   .0700749   .0025924    27.03   0.000     .0649938    .0751559
+     1.black |   .5207269   .1452682     3.58   0.000     .2360065    .8054474
+       _cons |  -8.567218   .3342035   -25.63   0.000    -9.222244   -7.912191
+------------------------------------------------------------------------------
+Note: 0 failures and 3176 successes completely determined.
+
+. outreg2 using myreg4.doc, replace ctitle(Model sign~ridagemn+black)
+myreg4.doc
+dir : seeout
+
+. estat ic
+
+Akaike's information criterion and Bayesian information criterion
+
+-----------------------------------------------------------------------------
+       Model |        Obs  ll(null)  ll(model)      df         AIC        BIC
+-------------+---------------------------------------------------------------
+           . |      7,563 -2881.697  -751.2437       3    1508.487   1529.281
+-----------------------------------------------------------------------------
+               Note: N=Obs used in calculating BIC; see [R] BIC note.
+
+. * BIC: 1529.281, retain Black
+. 
+. // Add category Other
+. logit sign ridagemn i.black i.other  // Other 
+
+Iteration 0:   log likelihood = -2881.6973  
+Iteration 1:   log likelihood = -2103.5697  
+Iteration 2:   log likelihood = -963.95456  
+Iteration 3:   log likelihood = -759.60988  
+Iteration 4:   log likelihood = -750.24099  
+Iteration 5:   log likelihood = -750.18961  
+Iteration 6:   log likelihood = -750.18959  
+
+Logistic regression                             Number of obs     =      7,563
+                                                LR chi2(3)        =    4263.02
+                                                Prob > chi2       =     0.0000
+Log likelihood = -750.18959                     Pseudo R2         =     0.7397
+
+------------------------------------------------------------------------------
+        sign |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    ridagemn |   .0702617   .0026021    27.00   0.000     .0651617    .0753617
+     1.black |   .5674178   .1490265     3.81   0.000     .2753313    .8595043
+     1.other |   .3374737   .2329567     1.45   0.147    -.1191131    .7940604
+       _cons |  -8.636156   .3391561   -25.46   0.000    -9.300889   -7.971422
+------------------------------------------------------------------------------
+Note: 0 failures and 3180 successes completely determined.
+
+. outreg2 using myreg5.doc, replace ctitle(Model sign~ridagemn+black+other)
+myreg5.doc
+dir : seeout
+
+. estat ic
+
+Akaike's information criterion and Bayesian information criterion
+
+-----------------------------------------------------------------------------
+       Model |        Obs  ll(null)  ll(model)      df         AIC        BIC
+-------------+---------------------------------------------------------------
+           . |      7,563 -2881.697  -750.1896       4    1508.379   1536.103
+-----------------------------------------------------------------------------
+               Note: N=Obs used in calculating BIC; see [R] BIC note.
+
+. * BIC: 1536.103
+. 
+. // Remove NAs in poverty income ratio 
+. drop if (indfmpir==.)
+(317 observations deleted)
+
+. save syn_select, replace
+file syn_select.dta saved
+
+. 
+. // Add poverty income ratio to the model
+. logit sign ridagemn i.black indfmpir
+
+Iteration 0:   log likelihood =  -2767.303  
+Iteration 1:   log likelihood = -2018.4446  
+Iteration 2:   log likelihood =  -943.5576  
+Iteration 3:   log likelihood = -727.20916  
+Iteration 4:   log likelihood = -713.72745  
+Iteration 5:   log likelihood = -713.67086  
+Iteration 6:   log likelihood = -713.67085  
+
+Logistic regression                             Number of obs     =      7,246
+                                                LR chi2(3)        =    4107.26
+                                                Prob > chi2       =     0.0000
+Log likelihood = -713.67085                     Pseudo R2         =     0.7421
+
+------------------------------------------------------------------------------
+        sign |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    ridagemn |   .0713747   .0027063    26.37   0.000     .0660704    .0766789
+     1.black |   .4949803   .1489242     3.32   0.001     .2030943    .7868664
+    indfmpir |  -.1190729    .045378    -2.62   0.009    -.2080121   -.0301337
+       _cons |  -8.460287   .3510302   -24.10   0.000    -9.148294   -7.772281
+------------------------------------------------------------------------------
+Note: 0 failures and 3063 successes completely determined.
+
+. outreg2 using myreg6.doc, replace ctitle(Model sign~ridagemn+black+indfmpir)
+myreg6.doc
+dir : seeout
+
+. estat ic
+
+Akaike's information criterion and Bayesian information criterion
+
+-----------------------------------------------------------------------------
+       Model |        Obs  ll(null)  ll(model)      df         AIC        BIC
+-------------+---------------------------------------------------------------
+           . |      7,246 -2767.303  -713.6708       4    1435.342   1462.895
+-----------------------------------------------------------------------------
+               Note: N=Obs used in calculating BIC; see [R] BIC note.
+
+. * BIC: 1462.895, retain PIR
+. 
+. * Final model: sign~ridagemn+black+indfmpir 
+. logit sign ridagemn i.black indfmpir   
+
+Iteration 0:   log likelihood =  -2767.303  
+Iteration 1:   log likelihood = -2018.4446  
+Iteration 2:   log likelihood =  -943.5576  
+Iteration 3:   log likelihood = -727.20916  
+Iteration 4:   log likelihood = -713.72745  
+Iteration 5:   log likelihood = -713.67086  
+Iteration 6:   log likelihood = -713.67085  
+
+Logistic regression                             Number of obs     =      7,246
+                                                LR chi2(3)        =    4107.26
+                                                Prob > chi2       =     0.0000
+Log likelihood = -713.67085                     Pseudo R2         =     0.7421
+
+------------------------------------------------------------------------------
+        sign |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    ridagemn |   .0713747   .0027063    26.37   0.000     .0660704    .0766789
+     1.black |   .4949803   .1489242     3.32   0.001     .2030943    .7868664
+    indfmpir |  -.1190729    .045378    -2.62   0.009    -.2080121   -.0301337
+       _cons |  -8.460287   .3510302   -24.10   0.000    -9.148294   -7.772281
+------------------------------------------------------------------------------
+Note: 0 failures and 3063 successes completely determined.
+
+. outreg2 using myreg7.doc, replace ctitle(Model sign~ridagemn+black+indfmpir)
+myreg7.doc
+dir : seeout
+
+. 
+. /* d. */
+. // Adjusted Predictions at the mean (for other values) 
+. // at the representative ages: 8, 9, 10, 11, 12
+. margins, at(ridagemn=(96 108 120 132 144)) atmeans post
+
+Adjusted predictions                            Number of obs     =      7,246
+Model VCE    : OIM
+
+Expression   : Pr(sign), predict()
+
+1._at        : ridagemn        =          96
+               0.black         =    .7281259 (mean)
+               1.black         =    .2718741 (mean)
+               indfmpir        =    2.463474 (mean)
+
+2._at        : ridagemn        =         108
+               0.black         =    .7281259 (mean)
+               1.black         =    .2718741 (mean)
+               indfmpir        =    2.463474 (mean)
+
+3._at        : ridagemn        =         120
+               0.black         =    .7281259 (mean)
+               1.black         =    .2718741 (mean)
+               indfmpir        =    2.463474 (mean)
+
+4._at        : ridagemn        =         132
+               0.black         =    .7281259 (mean)
+               1.black         =    .2718741 (mean)
+               indfmpir        =    2.463474 (mean)
+
+5._at        : ridagemn        =         144
+               0.black         =    .7281259 (mean)
+               1.black         =    .2718741 (mean)
+               indfmpir        =    2.463474 (mean)
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |     Margin   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+         _at |
+          1  |    .145906   .0127616    11.43   0.000     .1208938    .1709183
+          2  |   .2868807   .0166531    17.23   0.000     .2542412    .3195202
+          3  |   .4864818   .0174419    27.89   0.000     .4522963    .5206673
+          4  |   .6904898   .0154591    44.67   0.000     .6601904    .7207892
+          5  |   .8400911   .0117878    71.27   0.000     .8169874    .8631948
+------------------------------------------------------------------------------
+
+. outreg2 using margin1.doc, replace ctitle(Adjusted predictions)
+margin1.doc
+dir : seeout
+
+. quietly:logit sign ridagemn black indfmpir 
+
+. quietly:margins, at(ridagemn=(96 108 120 132 144)) atmeans 
+
+. marginsplot
+
+  Variables that uniquely identify margins: ridagemn
+
+. 
+. // The marginal effects at the mean of black 
+. // at the same representative ages
+. quietly:logit sign ridagemn i.black indfmpir 
+
+. margins, dydx(black) at (ridagemn=(96 108 120 132 144)) atmeans post
+
+Conditional marginal effects                    Number of obs     =      7,246
+Model VCE    : OIM
+
+Expression   : Pr(sign), predict()
+dy/dx w.r.t. : 1.black
+
+1._at        : ridagemn        =          96
+               0.black         =    .7281259 (mean)
+               1.black         =    .2718741 (mean)
+               indfmpir        =    2.463474 (mean)
+
+2._at        : ridagemn        =         108
+               0.black         =    .7281259 (mean)
+               1.black         =    .2718741 (mean)
+               indfmpir        =    2.463474 (mean)
+
+3._at        : ridagemn        =         120
+               0.black         =    .7281259 (mean)
+               1.black         =    .2718741 (mean)
+               indfmpir        =    2.463474 (mean)
+
+4._at        : ridagemn        =         132
+               0.black         =    .7281259 (mean)
+               1.black         =    .2718741 (mean)
+               indfmpir        =    2.463474 (mean)
+
+5._at        : ridagemn        =         144
+               0.black         =    .7281259 (mean)
+               1.black         =    .2718741 (mean)
+               indfmpir        =    2.463474 (mean)
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+0.black      |  (base outcome)
+-------------+----------------------------------------------------------------
+1.black      |
+         _at |
+          1  |    .066838   .0216773     3.08   0.002     .0243512    .1093247
+          2  |   .1056674   .0327752     3.22   0.001     .0414291    .1699056
+          3  |   .1230124   .0365343     3.37   0.001     .0514066    .1946183
+          4  |   .1008256   .0289855     3.48   0.001     .0440151     .157636
+          5  |   .0616343   .0175143     3.52   0.000     .0273068    .0959618
+------------------------------------------------------------------------------
+Note: dy/dx for factor levels is the discrete change from the base level.
+
+. outreg2 using margin2.doc, replace ctitle(The marginal effects at the mean)
+margin2.doc
+dir : seeout
+
+. quietly:logit sign ridagemn i.black indfmpir 
+
+. quietly:margins, dydx(i.black) at (ridagemn=(96 108 120 132 144)) atmeans
+
+. marginsplot
+
+  Variables that uniquely identify margins: ridagemn
+
+. 
+. // Average Marginal Effect of ridrethBlack at the representative ages
+. quietly:logit sign ridagemn i.black indfmpir 
+
+. margins, dydx(black) at (ridagemn=(96 108 120 132 144)) post
+
+Average marginal effects                        Number of obs     =      7,246
+Model VCE    : OIM
+
+Expression   : Pr(sign), predict()
+dy/dx w.r.t. : 1.black
+
+1._at        : ridagemn        =          96
+
+2._at        : ridagemn        =         108
+
+3._at        : ridagemn        =         120
+
+4._at        : ridagemn        =         132
+
+5._at        : ridagemn        =         144
+
+------------------------------------------------------------------------------
+             |            Delta-method
+             |      dy/dx   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+0.black      |  (base outcome)
+-------------+----------------------------------------------------------------
+1.black      |
+         _at |
+          1  |   .0670636   .0216958     3.09   0.002     .0245406    .1095867
+          2  |   .1051526    .032627     3.22   0.001     .0412049    .1691004
+          3  |   .1219341   .0363007     3.36   0.001     .0507861    .1930821
+          4  |   .1003884    .028907     3.47   0.001     .0437318     .157045
+          5  |    .061892   .0175782     3.52   0.000     .0274394    .0963445
+------------------------------------------------------------------------------
+Note: dy/dx for factor levels is the discrete change from the base level.
+
+. outreg2 using margin3.doc, replace ctitle(Average marginal effect)
+margin3.doc
+dir : seeout
+
+. quietly:logit sign ridagemn i.black indfmpir 
+
+. quietly:margins, dydx(i.black) at (ridagemn=(96 108 120 132 144))
+
+. marginsplot
+
+  Variables that uniquely identify margins: ridagemn
+
+. 
+. /* e */
+. // set up the survey weights
+. svyset sdmvpsu [pweight=wtmec2yr], strata(sdmvstra) vce(linearized)
+
+      pweight: wtmec2yr
+          VCE: linearized
+  Single unit: missing
+     Strata 1: sdmvstra
+         SU 1: sdmvpsu
+        FPC 1: <zero>
+
+. 
+. // Refit  final model from part c using svy
+. svy:logit sign ridagemn black indfmpir
+(running logit on estimation sample)
+
+Survey: Logistic regression
+
+Number of strata   =        15                Number of obs     =        7,246
+Number of PSUs     =        30                Population size   =  240,124,554
+                                              Design df         =           15
+                                              F(   3,     13)   =        27.65
+                                              Prob > F          =       0.0000
+
+------------------------------------------------------------------------------
+             |             Linearized
+        sign |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+    ridagemn |    .061941   .0072296     8.57   0.000     .0465314    .0773506
+       black |   .5434941   .1461948     3.72   0.002     .2318871     .855101
+    indfmpir |  -.0811815   .0521922    -1.56   0.141    -.1924264    .0300635
+       _cons |  -7.516015   .8615597    -8.72   0.000    -9.352386   -5.679644
+------------------------------------------------------------------------------
+Note: 0 failures and 2811 successes completely determined.
+
+. outreg2 using myreg7.doc, append ctitle(Model svy:sign~ridagemn+black+indfmpir)
+myreg7.doc
+dir : seeout
+
+. 
+. // Comment on differences
+. log close
+      name:  <unnamed>
+       log:  F:\Program Files\Stata15\ps2_q2.log
+  log type:  text
+ closed on:  19 Oct 2018, 16:50:11
+--------------------------------------------------------------------------------------------------------------------------------------------
