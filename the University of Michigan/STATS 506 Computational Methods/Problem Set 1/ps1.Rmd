@@ -1,0 +1,187 @@
+---
+title: "Stats 506, F18, Problem Set 1"
+author: "Zi Wang, tlwangzi@umich.edu"
+date: "10/02/2018"
+output: pdf_document
+---
+## Question 1
+
+```{bash setup_q1, echo=FALSE}
+#!/bin/bash
+
+## Analysis of the RECS 2015 data.
+##
+## The RECS 2015 Data used in this script can be found at the link below:
+##   https://www.eia.gov/consumption/residential/data/2015/csv/recs2015_public_v3.csv
+##
+## Author: Zi Wang (tlwangzi@umich.edu)
+## Updated: Oct 02, 2018
+```
+
+### Part A
+
+#### i.
+```{bash q1Ai}
+cat ./recs2015_public_v3.csv|cut -b 10|grep ^3|wc -l
+```
+
+#### ii.
+```{bash q1Aii}
+cat ./recs2015_public_v3.csv|cut -d , -f 1,479-575 >recs_comp.txt|gzip recs_comp.txt
+```
+
+
+### Part B
+#### i.
+```{bash q1Bi, echo=FALSE}
+for i in {1..4}
+do
+cat ./recs2015_public_v3.csv|cut -b 10|grep ^$i | wc -l
+done
+```
+
+#### ii.
+```{bash q1Bii, echo=FALSE}
+cat ./recs2015_public_v3.csv |cut -d , -f 2,3 |tail -n +2 |sort -n -k 4 -t'"'|uniq   > region_division.txt
+cat region_division.txt
+```
+
+\pagebreak
+
+## Question 2 
+
+```{r setup_q2, echo = FALSE, include = FALSE}
+library(nycflights13)
+suppressMessages(library("tidyverse"))
+source('ps1_q2.R')
+q2 = ps1_q2()
+```
+
+### a.
+
+```{r q2a, echo = FALSE, fig.height = 4, fig.cap = cap}
+air_name = q2[[1]]
+cap = "Airlines responsible for at least 1% of the flights"
+cols = c('airlines')
+knitr::kable(air_name,digits = 1,caption = cap,col.names = cols)
+```
+
+### b.
+```{r q2b, echo = FALSE, fig.height = 4, fig.cap = cap}
+num_2013 = q2[[2]]
+num_2014 = q2[[3]]
+num_diff = q2[[4]]
+num_diff_max = q2[[5]]
+num_diff_min = q2[[6]]
+cap = "The number and percent of annual flights 
+  in the first 10 months of 2013"
+cols = c('carrier','number','percent','lwr of CI','upr of CI')
+knitr::kable(num_2013,digits = 1,caption = cap,col.names = cols)
+cap = "The number and percent of annual flights 
+  in the first 10 months of 2014"
+cols=c('carrier','number','percent','lwr of CI','upr of CI')
+knitr::kable(num_2014,digits = 1,caption = cap,col.names = cols)
+cap = "The change"
+cols=c('carrier','change in number','change in percent',
+       'lwr of CI','upr of CI')
+knitr::kable(num_diff,digits = 1,caption = cap,col.names = cols)
+```
+
+The lines showed the largest increase:
+```{r increase, echo = FALSE}
+num_diff_max
+```
+The lines showed the largest decrease:
+```{r decrease, echo = FALSE}
+num_diff_min
+```
+
+Reason:The total number of flights in the first 10 months of 2014 
+  is less than that of 2013.
+
+
+### c.
+```{r q2c, echo = FALSE, fig.height = 4, fig.cap = cap}
+per_tol = q2[[7]]
+per_tol_JFK_max = q2[[8]]
+per_tol_EWR_max = q2[[9]]
+per_tol_LGA_max = q2[[10]]
+cap = "The percent of flights each airline is responsible for 
+  among of the three NYC airports."
+cols=c('carrier','airport','percent','lwr of CI','upr of CI')
+knitr::kable(per_tol,digits = 1,caption = cap,col.names = cols)
+```
+
+The largest carrier at airport JFK:
+```{r JFK, echo = FALSE}
+per_tol_JFK_max
+```
+The largest carrier at airport EWR:
+```{r EWR, echo = FALSE}
+per_tol_EWR_max
+```
+The largest carrier at airport LGA.
+```{r LGA, echo = FALSE}
+per_tol_LGA_max
+```
+
+\pagebreak
+## Question 3
+
+``` {r setup_q3, echo = FALSE, include = FALSE}
+source('ps1_q3.R')
+q3=ps1_q3()
+```
+
+### a. 
+```{r q3a, echo = FALSE, fig.height = 4, fig.cap = cap}
+recs_wall_summary = q3[[1]]
+recs_wall_max = q3[[2]]
+recs_wall_min = q3[[3]]
+cap = "Percent of homes which have stucco construction 
+  as the major outside wall material"
+cols = c('Division','Percent','Standard errors')
+knitr::kable(recs_wall_summary,digits = 1,caption = cap,col.names = cols)
+```
+
+The division which has the largest proportion:
+```{r largest, echo = FALSE}
+recs_wall_max
+```
+The division which has the lowest proportion:
+```{r lowest, echo = FALSE}
+recs_wall_min
+```
+
+
+### b.
+```{r q3b, echo = FALSE, fig.height = 4, fig.cap = cap}
+recs_elec_summary = q3[[4]]
+recs_elec_summary_stra = q3[[5]]
+cap = "Average total electricity usage in kilowatt hours in each division"
+cols=c('Division','Average','Standard errors')
+knitr::kable(recs_elec_summary,digits = 1,caption = cap,col.names = cols)
+cap = "Average total electricity usage in kilowatt hours in each division 
+  stratified by urban and rural status"
+cols=c('Division','Status','Average','Standard errors')
+knitr::kable(recs_elec_summary_stra,digits = 1,caption = cap,col.names = cols)
+```
+
+
+### c.
+```{r q3c, echo = FALSE, fig.height = 4, fig.cap = cap}
+recs_int_summary_U = q3[[6]]
+recs_int_summary_R = q3[[7]]
+rec_int_diff_max = q3[[8]]
+cap = "The proportion of homes with internet access in urban areas"
+cols=c('Division','Proportion','Standard errors')
+knitr::kable(recs_int_summary_U,digits = 1,caption = cap,col.names = cols)
+cap = "The proportion of homes with internet access in rural areas"
+cols=c('Division','Proportion','Standard errors')
+knitr::kable(recs_int_summary_R,digits = 1,caption = cap,col.names = cols)
+```
+
+The division which has the largest disparity:
+```{r disparity, echo = FALSE}
+rec_int_diff_max
+```
