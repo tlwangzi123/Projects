@@ -1,0 +1,21 @@
+#!/bin/sh
+#PBS -N jobname
+#PBS -M tlwangzi@umich.edu
+#PBS -m abe
+#PBS -V
+
+#PBS -l procs=4,pmem=1000mb,walltime=00:15:00
+
+#PBS -o /home/tlwangzi
+
+#PBS -q flux
+#PBS -A stats_flux
+#PBS -l qos=flux 
+
+#PBS -j oe
+
+module load R/3.5.0
+
+path=/home/tlwangzi
+
+R CMD BATCH  $path/ps4_q2b.R $path/ps4_q2b.Rout

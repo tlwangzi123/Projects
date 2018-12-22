@@ -1,0 +1,23 @@
+#PBS -N jobname
+#PBS -M tlwangzi@umich.edu
+#PBS -m abe
+#PBS -V
+
+#PBS -l procs=4,pmem=1000mb,walltime=00:15:00
+
+#PBS -o /home/tlwangzi
+
+#PBS -q flux
+#PBS -A stats_flux
+#PBS -l qos=flux 
+
+#PBS -j oe
+
+#PBS -t 1,2,4
+
+module load R/3.5.0
+
+path=/home/tlwangzi
+Rscript $path/ps4_q2c.R sigma=$(echo "scale=2; $PBS_ARRAYID/4" | bc -l) mc_rep=10000 n_cores=4 \
+ >> $path/ps4_q2c-${PBS_ARRAYID}.Rout
+

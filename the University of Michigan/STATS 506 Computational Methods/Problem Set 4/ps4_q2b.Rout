@@ -1,0 +1,126 @@
+
+R version 3.5.0 (2018-04-23) -- "Joy in Playing"
+Copyright (C) 2018 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+[Previously saved workspace restored]
+
+> ## Run parallel Monte Carlo Simulations using doParallel Package
+> ##
+> ## Author: Zi Wang (tlwangzi@umich.edu)
+> ## Updated: Dec 10, 2018
+> 
+> # Libraries: ------------------------------------------------------------------
+> library(parallel)
+> library(doParallel)
+Loading required package: foreach
+Loading required package: iterators
+> library(tidyverse)
+── Attaching packages ─────────────────────────────────────── tidyverse 1.2.1 ──
+✔ ggplot2 3.1.0     ✔ purrr   0.2.5
+✔ tibble  1.4.2     ✔ dplyr   0.7.8
+✔ tidyr   0.8.2     ✔ stringr 1.3.1
+✔ readr   1.2.1     ✔ forcats 0.3.0
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ purrr::accumulate() masks foreach::accumulate()
+✖ dplyr::filter()     masks stats::filter()
+✖ dplyr::lag()        masks stats::lag()
+✖ purrr::when()       masks foreach::when()
+> 
+> # Empty the global environment
+> rm(list = ls())
+> 
+> source('./ps4_q2_funcs.R')
+> 
+> # Specify cores to use in the cluster
+> ncores = 4   
+> 
+> # set up a cluster called 'cl'
+> cl = makeCluster(ncores)
+> 
+> # register the cluster
+> registerDoParallel(cl)
+> 
+> fun_q2b = function(rho, sigma, mc_rep, beta){
++   # Run Parallel Monte Carlo Simulations for fixed rho and sigma
++   S = matrix(0, nrow = p, ncol = p)   
++   S1 = matrix(rho*0.01, nrow = 10, ncol = 10)
++   S[1:10,1:10] =S1
++   diag(S) = 1                   # Coviance matrix of X
++   R = chol(S)
++   X = rnorm(n*p)               
++   dim(X) = c(n,p)
++   X = X %*% R                   # X
++   result = MC_analysis(X, beta, sigma, mc_rep)
++   
++   alpha = 0.05                  # Confidence level
++   indice = 1:10                 # indice
++   method = c('holm', 'bonferroni', 'BH', 'BY')
++   
++   partial = lapply(method, function(x) 
++   {evaluate(apply(result, 2, p.adjust, method = x), indice) %>%
++       mutate(rho = rho, sigma = sigma, method = x)})
++   res_q2b = as.tibble(do.call('rbind', lapply(partial, function(x) x))) %>%
++     select(rho, sigma, metric, method, est, se)
++   res_q2b
++ }
+> 
+> 
+> n = 1e3                         # n
+> p = 1e2                         # p
+> mc_rep = 1e4                    # mc_rep
+> beta = rep(0,p)
+> for (i in 1:10) beta[i] = 0.1   # beta
+> rho = seq(-0.75, 0.75, 0.25)    # rho
+> sigma = c(0.25, 0.5, 1)         # sigma
+> 
+> # Use foreach loops to run simulations of 4 metrics
+> # for 4 multiple comparison methods
+> fit = foreach(i = 1:3,.packages = c('tidyverse')) %dopar%{
++   lapply(rho,function(x) fun_q2b(x, sigma[i], mc_rep, beta))
++ }
+> 
+> results_q4b= NULL
+> for (i in 1:7){
++ results_q4b = rbind(results_q4b,
++                     as.tibble(do.call('rbind',lapply(fit, function(x) x[[i]]))))
++ }
+> print(results_q4b)
+# A tibble: 336 x 6
+     rho sigma metric      method        est        se
+   <dbl> <dbl> <chr>       <chr>       <dbl>     <dbl>
+ 1 -0.75  0.25 FWER        holm       0.0444 0.00206  
+ 2 -0.75  0.25 FDR         holm       0.0126 0.000673 
+ 3 -0.75  0.25 Sensitivity holm       0.311  0.00152  
+ 4 -0.75  0.25 Specificity holm       0.999  0.0000240
+ 5 -0.75  0.25 FWER        bonferroni 0.0429 0.00203  
+ 6 -0.75  0.25 FDR         bonferroni 0.0123 0.000675 
+ 7 -0.75  0.25 Sensitivity bonferroni 0.308  0.00150  
+ 8 -0.75  0.25 Specificity bonferroni 1.000  0.0000235
+ 9 -0.75  0.25 FWER        BH         0.233  0.00423  
+10 -0.75  0.25 FDR         BH         0.0438 0.000889 
+# ... with 326 more rows
+> 
+> # Save the data results_q4b to results_q4b.RData
+> save(results_q4b, file = './results_q4b.RData')
+> 
+> ## shut down the cluster after use ##
+> stopCluster(cl)
+> 
+> proc.time()
+   user  system elapsed 
+  1.253   0.447 193.018 

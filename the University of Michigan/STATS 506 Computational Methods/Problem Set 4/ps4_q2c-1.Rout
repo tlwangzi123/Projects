@@ -1,0 +1,15 @@
+[1] "sigma=.25"    "mc_rep=10000" "n_cores=4"   
+# A tibble: 112 x 6
+     rho sigma metric      method        est        se
+   <dbl> <dbl> <chr>       <chr>       <dbl>     <dbl>
+ 1 -0.75  0.25 FWER        holm       0.0437 0.00204  
+ 2 -0.75  0.25 FDR         holm       0.0124 0.000660 
+ 3 -0.75  0.25 Sensitivity holm       0.314  0.00152  
+ 4 -0.75  0.25 Specificity holm       1.000  0.0000234
+ 5 -0.75  0.25 FWER        bonferroni 0.0418 0.00200  
+ 6 -0.75  0.25 FDR         bonferroni 0.0120 0.000655 
+ 7 -0.75  0.25 Sensitivity bonferroni 0.311  0.00151  
+ 8 -0.75  0.25 Specificity bonferroni 1.000  0.0000230
+ 9 -0.75  0.25 FWER        BH         0.236  0.00424  
+10 -0.75  0.25 FDR         BH         0.0443 0.000893 
+# ... with 102 more rows

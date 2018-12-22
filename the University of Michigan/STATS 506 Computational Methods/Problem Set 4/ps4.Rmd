@@ -1,0 +1,90 @@
+---
+title: "Stats 506, F18, Problem Set 4"
+author: "Zi Wang, tlwangzi@umich.edu"
+date: "12/11/2018"
+output: html_document
+---
+## Question 1
+
+```{r q1_source, echo = FALSE, message = FALSE}
+library(tidyverse)
+source('./ps4_q1.R')
+```
+
+The result:
+
+```{r q1a, echo = FALSE}
+cap = '**Table 1.** The all-time leader in hits (with at least 200 hits)
+       for each birth country.'
+knitr::kable(result, align = 'r', caption = cap)
+```
+
+\pagebreak
+
+## Question 2 
+
+```{r q2a_source, echo = FALSE, message = FALSE}
+source('./ps4_q2_funcs.R')
+source('./ps4_q2a.R')
+```
+
+### a.
+
+Show the dimension and the first 20 rows of `results_q4a`:  
+
+```{r q2a, echo = TRUE}
+dim(results_q4a)
+cap = '**Table 2.** The first 20 rows of the results 
+       for Monte Carlo simulations using mclapply.'
+knitr::kable(results_q4a[1:20,], align = 'r', digits = 5, caption = cap)
+```
+
+### b.
+The detail can be seen in `ps4_q2b.R` and `run_ps4_q2b.pbs`.  
+The result can be seen in `results_q4b.RData` and `ps4_q2b.Rout`.  
+Here, we produce a table to show the dimension and 
+first 20 rows of `results_q4b`:  
+```{r q2b, echo = TRUE}
+load("./results_q4b.RData")
+dim(results_q4b)
+cap = '**Table 3.** The first 20 rows of the results 
+       for Monte Carlo simulations using doParallel
+       and nested foreach loops.'
+knitr::kable(results_q4b[1:20,], align = 'r', digits = 5, caption = cap)
+```
+
+### c.
+The detail can be seen in `ps4_q2c.R` and `run_ps4_q2c.pbs`.    
+The result can be seen in `ps4_q2c-1.Rout`,
+  `ps4_q2c-2.Rout` and `ps4_q2c-4.Rout`.   
+Here, we source `ps4_q2c.R`, and produce a table to show the combination of 
+the first 10 rows of the result from the situation of sigma = 0.25,
+sigma = 0.5 and sigma = 1:  
+```{r q2c_source, echo = TRUE, message = FALSE}
+source("./ps4_q2c.R")
+```
+
+```{r q2c, echo = TRUE}
+cap = '**Table 4.** The combination of the 
+first 10 rows of the result using future from the situation of sigma = 0.25,
+sigma = 0.5 and sigma = 1.'
+knitr::kable(results_q4c[c(1:10, 113:122, 225:234),], align = 'r', digits = 5, 
+             caption = cap)
+```
+
+## Question 3
+The detail can be seen in `ps4_q3.sas`.  
+Results from (c) can be seen in `ps4_q3c.csv`.  
+Results from (d) can be seen in `ps4_q3d.csv`.  
+We read data from `ps4_q3c.csv` and `ps4_q3d.csv` and verify they match:
+```{r q3_match, echo = TRUE, message = FALSE}
+result_c = read_delim("ps4_q3c.csv", delim = ',')
+cap = "**Table 5.** Result from c"
+knitr::kable(result_c, align = 'r', caption = cap)
+result_d = read_delim("ps4_q3d.csv", delim = ',')
+cap = "**Table 6.** Result from d"
+knitr::kable(result_d, align = 'r', caption = cap)
+result_c == result_d
+```
+Also, we can use `proc compare` in SAS to verify they match, 
+and the result shows that they match.
