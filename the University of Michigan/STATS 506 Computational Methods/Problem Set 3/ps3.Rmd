@@ -1,0 +1,503 @@
+---
+title: "Stats 506, F18, Problem Set 3"
+author: "Zi Wang, tlwangzi@umich.edu"
+date: "11/21/2018"
+output: html_document
+---
+## Question 1
+
+```{r q1_source, echo = FALSE, message = FALSE}
+library(ggplot2)
+source('./ps3_q1.R')
+```
+
+### a.
+
+```{r q1a_table, echo = FALSE}
+cap = '**Table 1.** Percent of homes with stucco construction as 
+  the major outside wall material within each division.'
+p_stucco_tab = 
+  p_stucco[order(-p_stucco) 
+          ][,.(`Division` = division,
+               `Precent of Stucco Homes (95% CI)` = 
+                 sprintf('%4.1f%% (%4.1f, %4.1f)', p_stucco, lwr, upr))]
+knitr::kable(p_stucco_tab, align = 'r', caption = cap)
+```
+
+```{r q1a_figure, echo = FALSE, fig.cap = cap}
+cap = '**Figure 1.** Percent of homes with stucco construction as 
+  the major outside wall material within each division.'
+p_stucco = p_stucco[order(-p_stucco)
+                   ][,`:=`(Division = 
+                     factor(as.character(division), as.character(division)))]
+ggplot(p_stucco, aes(x = Division, y = p_stucco) ) +
+geom_col(fill = 'navy' ) +
+geom_errorbar(aes(ymin = lwr, ymax = upr), 
+              col = 'darkslategrey') +
+theme_bw() +
+ylab('Percent of Stucco Homes') +
+xlab('Division') +
+theme(axis.text.x = element_text(size = 8, angle = 90))
+```
+
+The Mountain South division has the highest proportion: 64%.   
+The East South Central Division has the highest proportion: 0.4%.
+
+### b.
+```{r q1b_table1, echo = FALSE}
+cap = '**Table 2.** Average total electricity usage in kilowatt hours 
+in each division.'
+m = qnorm(.975)
+pwc = function(x) format(round(x), big.mark = ',')
+kwh1 = kwh[order(-kwh)
+         ][,.(`Division` = division,
+              `Average total electricity usage in kilowatt hours(95% CI)` = 
+              sprintf('%s, (%s - %s)', 
+                     pwc(kwh), pwc(kwh - m*se_kwh), pwc(kwh + m*se_kwh)))]
+knitr::kable(kwh1, align = 'r', caption = cap)
+```
+
+```{r q1b_figure1, echo = FALSE, fig.cap = cap}
+cap = '**Figure 2.** Average total electricity usage in kilowatt hours 
+in each division.'
+kwh2 = kwh[order(-kwh)
+          ][,`:=`(div = 
+                  factor(as.character(division), as.character(division)))]
+ggplot(kwh2, aes(x = div, y = kwh) ) +
+geom_point() +
+geom_errorbar(aes(ymin = lwr, ymax = upr)) +
+coord_flip() +
+theme_bw() +
+ylab('kwh/home') +
+xlab('')
+```
+
+```{r q1b_table2, echo = FALSE}
+cap = '**Table 3.** Average total electricity usage in kilowatt hours 
+in each division stratified by urban and rural status.'
+kwh_div = kwh_div[,`:=`(div_avg = mean(kwh_div)), by = division
+                 ][order(-div_avg)
+                 ][,`:=`(div = factor(as.character(division), 
+                         levels = unique(as.character(division))))]
+kwh_div1 = 
+  kwh_div[,.(`Division` = div,
+             `Average Electricity Usage(95% CI)` = 
+                sprintf('%s, (%6s - %6s)', 
+                  pwc(kwh_div), 
+                  pwc(kwh_div - m*se_kwh_div), pwc(kwh_div + m*se_kwh_div)),
+             Rurality = ifelse(urban, 'Average kwh in Urban status(95% CI)', 
+                                      'Average kwh in Rural status(95% CI)'))]
+kwh_div1 = dcast(kwh_div1, `Division` ~ Rurality,
+                 value.var = "Average Electricity Usage(95% CI)")
+knitr::kable(kwh_div1, align  = 'r', cap = cap)
+```
+
+```{r q1b_figure2, echo = FALSE, fig.cap = cap}
+cap = '**Figure 3.** Average total electricity usage in kilowatt hours 
+in each division stratified by urban and rural status.'
+kwh_div2 = kwh_div[,`:=`(Rurality = ifelse(urban, 'Urban', 'Rural'))]
+ggplot(kwh_div2, aes(x = div, y = kwh_div, color = Rurality) ) +
+geom_point(position = position_dodge(.5) ) +
+geom_errorbar(aes(ymin = lwr, ymax = upr),
+              position = position_dodge(.5)) +
+scale_color_manual(values = c('navy', 'darkred')[2:1]) +
+coord_flip() +
+theme_bw() +
+ylab('Average total electricity usage') +
+xlab('')
+```
+
+### c.
+```{r q1c_table, echo = FALSE}
+cap = "**Table 4.** Disparity between urban and rural areas 
+  in terms of the proportion of homes with internet access."
+int_disp1 = int_disp[order(-est)
+                    ][,.(`Census Division` = division, 
+                         `Urban Internet Access, % (95% CI)` = Urban,
+                         `Rural Internet Access, % (95% CI)` = Rural, 
+                         `Difference, % (95% CI)` = Diff)]
+knitr::kable(int_disp1, align = 'r', caption = cap )
+```
+
+The Mountain South Division has the largest disparity 
+between urban and rural areas in terms of the proportion of homes 
+with internet access: 18.5%  
+
+```{r q1c_graph, echo = FALSE, fig.cap = cap}
+cap = "**Figure 4.** Disparity between urban and rural areas 
+  in terms of the proportion of homes with internet access."
+int_div2 = int_div[,`:=`(Rurality = ifelse(urban, 'Urban', 'Rural'),
+                         division = factor(as.character(division),
+                           as.character(
+                           (int_disp[order((Rural))]$division))))] 
+ggplot(int_div2, aes(x = division, y = int_div, fill = Rurality) ) +
+geom_col(position = position_dodge() ) +
+geom_errorbar(aes(ymin = lwr, ymax = upr), 
+              position = position_dodge(),
+              col = 'slategrey') +
+theme_bw() + 
+xlab('') +
+ylab('Proportion of homes with internet access') +
+ylim(c(0, 100)) +
+coord_flip() +
+scale_fill_manual(values = c('darkred', 'navy'))
+```
+
+### d.
+
+Question: What percent of homes have rented(KOWNRENT == 2) within each division? 
+Which division has the highest proportion? Which has the lowest?
+
+```{r q1d_table, echo = FALSE, fig.height = 4, fig.cap = cap}
+cap = '**Table 5.** Percent of homes rented(KOWNRENT == 2) 
+within each division.'
+p_rent_tab = 
+  p_rent[order(-p_rent) 
+        ][,.(`Division` = division,
+             `Precent of Stucco Homes (95% CI)` = 
+               sprintf('%4.1f%% (%4.1f, %4.1f)', p_rent, lwr, upr))]
+knitr::kable(p_rent_tab, align = 'r', caption = cap)
+```
+
+```{r q1d_figure, echo = FALSE, fig.cap = cap}
+cap = '**Figure 5.** Percent of homes rented(KOWNRENT == 2) 
+within each division.'
+p_rent = p_rent[order(-p_rent)
+               ][,`:=`(Division = 
+                 factor(as.character(division), as.character(division)))]
+ggplot(p_rent, aes(x = Division, y = p_rent) ) +
+geom_col(fill = 'navy' ) +
+geom_errorbar(aes(ymin = lwr, ymax = upr), 
+              col = 'darkslategrey') +
+theme_bw() +
+ylab('Percent of homes rented') +
+xlab('Division') +
+theme(axis.text.x = element_text(size = 8, angle = 90))
+```
+
+The Pacific division has the highest proportion: 43.7%.   
+The East South Central Division has the lowest proportion: 30.1%.
+
+\pagebreak
+
+## Question 2 
+
+```{r q2_source, echo = FALSE, message = FALSE}
+source('./ps3_q2.R')
+```
+
+### a.
+
+The function:
+```{r q2a_function, echo = TRUE, eval = FALSE}
+MC_analysis = function(X, beta, sigma, mc_rep){
+  result = matrix(0, nrow = p, ncol = mc_rep)
+  var = rep(0,p)
+  QR = qr(t(X) %*% X)
+  R = qr.R(QR)
+  Q = qr.Q(QR)
+  for (i in 1:mc_rep){
+    Y = X %*% beta 
+    Y1 = rnorm(n, mean = 0, sd = sigma)
+    dim(Y1) = c(n,1)
+    Y = Y + Y1
+    # i.
+    beta_hat = solve(R, t(Q) %*% t(X) %*% Y)
+    ## ii.
+    Y_hat = X %*% beta_hat
+    sigmasq_hat = sum((Y-Y_hat)^2)/(n-p)
+    ## iii.
+    v = (sigmasq_hat) * solve(R) %*% t(Q)
+    var = diag(v)
+    ## iv.
+    Z = beta_hat/sqrt(var)
+    result[,i] = 2*(1-pnorm(abs(Z)))
+  }
+  result
+}
+```
+
+Test the function, show the maximum of the finite precision error:
+```{r q2a, echo = TRUE}
+# Test the function: MC_analysis()
+n = 1000
+p = 100
+mc_rep = 1
+sigma = 1
+beta = rep(0,p)
+for (i in 1:10) beta[i] = sigma^2
+X = rnorm(n*p)
+dim(X) = c(n,p)
+set.seed(42)
+test = MC_analysis(X, beta, sigma, mc_rep)
+set.seed(42)
+Y = X%*%beta + rnorm(n, mean = 0, sd = sigma)
+fit0 = lm(Y ~ 0 + X)
+p_value = summary(fit0)$coefficients[,'Pr(>|t|)']
+ans = max(abs(test[,1]-p_value))
+ans
+```
+
+
+### b.
+```{r q2b, echo = TRUE, eval = FALSE}
+n = 1000
+p = 100
+sigma = 30                   # sigma
+S = matrix(0, nrow = p, ncol = p)
+for (i in 1:p)
+  S[i,i] = runif(1, min = 1, max = p)
+R = chol(S)
+X = rnorm(n*p)
+dim(X) = c(n,p)
+X = X %*% R                  # X
+beta = rep(0,p)
+for (i in 1:10) beta[i] = 1  # beta
+mc_rep = 1000                # mc_rep
+result = MC_analysis(X, beta, sigma, mc_rep)
+```
+
+### c.
+The evaluate() function:
+```{r q2c, echo = TRUE, eval = FALSE}
+evaluate = function(result, indice){
+  alpha = 0.05
+  m = qnorm(.975)
+  p = nrow(result)
+  mc_rep = ncol(result)
+  FWER = rep(0,mc_rep)
+  FDR = rep(0,mc_rep)
+  Sensitivity = rep(0,mc_rep)
+  Specificity = rep(0,mc_rep)
+  for (j in 1:mc_rep)
+  {
+    tp = 0  # true positive
+    tn = 0  # true negative
+    fp = 0  # false positive
+    fn = 0  # false negative
+    fn = sum(result[indice, j] >= alpha)  # H0 is False, and accept H0
+    tp = sum(result[indice, j] < alpha)   # H0 is false, and reject H0
+    tn = sum(result[-indice, j] >= alpha) # H0 is true, and accept H0
+    fp = sum(result[-indice, j] < alpha)  # H0 is true, and reject H0
+    FWER[j] = (fp>=1)
+    FDR[j] = fp/(fp+tp)
+    Sensitivity[j] = tp/(tp+fn)
+    Specificity[j] = tn/(tn+fp)
+  }
+  res = tibble(quan = c('The family wise error rate',
+                        'The false discovery rate',
+                        'The sensitivity',
+                        'The specificity'),
+               est = c(mean(FWER), mean(FDR), 
+                       mean(Sensitivity), mean(Specificity)),
+               se =  c(sd(FWER)/sqrt(mc_rep), 
+                       sd(FDR)/sqrt(mc_rep), 
+                       sd(Sensitivity)/sqrt(mc_rep), 
+                       sd(Specificity)/sqrt(mc_rep)))
+  res = res %>%
+    group_by(quan) %>%
+    mutate(lwr = pmax(est - m*se, 0), upr = pmin(est + m*se, 1),
+           ci = sprintf('%4.3f (%4.3f, %4.3f)', est, lwr, upr)) %>%
+    ungroup %>%
+    transmute(Quantities = quan, ci)
+  res
+}
+```
+
+### d.
+```{r q2d, echo = TRUE, eval = FALSE}
+alpha = 0.05 # Confidence level
+indice = vector()
+for (i in 1:p)
+  if (beta[i]!=0) indice = cbind(indice,i)
+fit1 = evaluate(result,indice) %>%
+  transmute(Quantities, "Uncorrected(95% CI)" = ci)
+result_adj_bon = apply(result, 2,function(x) p.adjust(x,method = 'bonferroni'))
+fit2 = evaluate(result_adj_bon,indice) %>%
+  transmute(Quantities, "Bonferroni(95% CI)" = ci)
+result_adj_holm = apply(result, 2, function(x) p.adjust(x,method = 'holm'))
+fit3 = evaluate(result_adj_holm,indice) %>%
+  transmute(Quantities, "Holm(95% CI)" = ci)
+result_adj_bh = apply(result, 2, function(x) p.adjust(x,method = 'BH'))
+fit4 = evaluate(result_adj_bh,indice) %>%
+  transmute(Quantities, "BH Correction(95% CI)" = ci)
+result_adj_by = apply(result, 2, function(x) p.adjust(x,method = 'BY'))
+fit5 = evaluate(result_adj_by,indice) %>%
+  transmute(Quantities, "BY Correction(95% CI)" = ci)
+```
+
+### e.
+```{r q2e, echo = TRUE, fig.height = 4, fig.cap = cap}
+fit = fit1 %>%
+  left_join(fit2, by = "Quantities") %>%
+  left_join(fit3, by = "Quantities") %>%
+  left_join(fit4, by = "Quantities") %>%
+  left_join(fit5, by = "Quantities")
+cap = '**Table 6.** The  Monte Carlo estimates of the four quantities 
+in the uncorrected and other four corrected situations'
+knitr::kable(fit, align  = 'r', cap = cap)
+```
+
+Discussion:  
+1. Both 4 corrections give smaller value of the family wise error rate than 
+that of the uncorrected. Besides, the Bonferroni correction and Holm correction 
+give small values of the family wise error rate compared to results of 
+the uncorrected because they are designed to give strong control of 
+the family wise error rate.    
+2. Both 4 corrections give smaller value of the false discovery rate than 
+that of the uncorrected. Besides, the BH correction and BY correction give 
+small values of the false discovery rate compared to results of 
+the uncorrected because they are designed to give control of 
+the false discovery rate.  
+3. The sensitivity are both very large among the 4 corrected methods 
+and the uncorrected.     
+4. The specificity are both very large among the 4 corrected methods 
+and the uncorrected.    
+
+\pagebreak
+
+## Question 3
+
+```{r q3_source, echo = FALSE, message = FALSE}
+source('./ps3_q3.R')
+```
+
+### a.
+```{r q3a, echo = TRUE, eval = FALSE}
+# Import data and select key items
+df = fread('mtcars.csv')
+df = df[,.(mpg,cyl,disp,hp,wt)]
+
+# Center disp, hp, and wt within cyl and then computer regression coefficients.
+beta_cyl = df[order(cyl)
+             ][,`:=`(disp_gc = disp - mean(disp),
+                     hp_gc = hp - mean(hp),
+                     wt_gc = wt - mean(wt)), by = cyl
+             ][,.(dispXmpg = sum(mpg*disp_gc), disp_sq = sum(disp_gc*disp_gc),
+                  hpXmpg = sum(mpg*hp_gc), hp_sq = sum(hp_gc*hp_gc),
+                  wtXmpg = sum(mpg*wt_gc), wt_sq = sum(wt_gc*wt_gc)), by = cyl
+             ][,`:=`(beta_cyl_disp = dispXmpg / (disp_sq),
+                     beta_cyl_hp = hpXmpg / (hp_sq),
+                     beta_cyl_wt = wtXmpg / (wt_sq))
+             ][,.(cyl, beta_cyl_disp, beta_cyl_hp, beta_cyl_wt)]
+beta_cyl
+
+# Export data
+fwrite(beta_cyl,file='mpg_betas_by_cyl.csv')
+```
+
+Results:
+```{r q3a_result, echo = FALSE}
+beta_cyl
+```
+
+### b.
+The function:
+```{r q3b_function, echo = TRUE, eval = FALSE}
+compute_reg_coef = function(df, response, predictor, group){
+# Center disp, hp, and wt within cyl and then computer regression coefficients.
+beta_cyl = df[,.(get(response),get(predictor),get(group))
+             ][,.(response = V1, predictor = V2, group = V3)
+             ][order(group)
+             ][,`:=`(predictor_gc = predictor - mean(predictor)), by = group
+             ][,.(preXres = sum(response * predictor_gc),
+                  predictor_sq = sum(predictor_gc * predictor_gc)), by = group
+             ][,.(group, beta_group_predictor = preXres / predictor_sq)]
+beta_cyl
+}
+```
+
+Test the function:
+```{r q3b_test, echo = TRUE}
+# beta_cyl_disp
+beta1 = compute_reg_coef(df, "mpg", "disp", "cyl")
+
+# beta_cyl_hp
+beta2 = compute_reg_coef(df, "mpg", "hp", "cyl")
+
+# beta_cyl_wt
+beta3 = compute_reg_coef(df, "mpg", "wt", "cyl")
+
+# Compare the difference between results in (a)
+c(max(beta1[,2] - beta_cyl[,2]),
+  max(beta2[,2] - beta_cyl[,3]),
+  max(beta3[,2] - beta_cyl[,4]))
+```
+
+
+
+### c.
+```{r q3c, echo = TRUE}
+# Center disp, hp, and wt within cyl and then computer regression coefficients.
+beta_cyl_dplyr = df %>%
+  group_by(cyl) %>%
+  mutate(disp_gc = disp - mean(disp),
+         hp_gc = hp - mean(hp),
+         wt_gc = wt - mean(wt),
+         dispXmpg = mpg*disp_gc, disp_sq = disp_gc*disp_gc,
+         hpXmpg = mpg*hp_gc, hp_sq = hp_gc*hp_gc,
+         wtXmpg = mpg*wt_gc, wt_sq = wt_gc*wt_gc) %>%
+  summarize_at(vars(dispXmpg:wt_sq), sum) %>%
+  mutate(beta_cyl_disp = dispXmpg / (disp_sq),
+         beta_cyl_hp = hpXmpg / (hp_sq),
+         beta_cyl_wt = wtXmpg / (wt_sq)) %>%
+  select(cyl, beta_cyl_disp, beta_cyl_hp, beta_cyl_wt)
+```
+
+Results:
+```{r q3c_result, echo = FALSE}
+beta_cyl_dplyr
+```
+
+### d.
+The function:
+```{r q3d_function, echo = TRUE}
+compute_reg_coef_dplyr = function(df, response, predictor, group){
+  # quote the variable with quo(), then unquote it in the dplyr call with !!
+  response = enquo(response)
+  predictor = enquo(predictor)
+  group = enquo(group)
+  
+  # Use quo_name() to convert the input expression to a string,
+  #   so we create the new names by pasting together strings
+  predictor_gc = paste0(quo_name(predictor),"_gc")
+  preXres = paste0(quo_name(predictor), "X", quo_name(response))
+  predictor_sq = paste0(quo_name(predictor),"_sq")
+  beta_group_predictor = 
+    paste0("beta_",quo_name(group),"_",quo_name(predictor))
+  beta_cyl = df %>%
+    group_by(!!group) %>%
+    
+    # !! mean_name = mean(!! expr) is not valid R code, 
+    #   so we need to use the := helper 
+    # Use quo_name() to convert the input expression to a string,
+    #   and then use .data[[]] to use the column we want
+    mutate(!!predictor_gc := !!predictor - mean(!!predictor),
+           !!preXres := sum(!!response * .data[[quo_name(predictor_gc)]]),
+           !!predictor_sq := sum(.data[[quo_name(predictor_gc)]] *
+                                 .data[[quo_name(predictor_gc)]])) %>%
+    mutate(!!beta_group_predictor := .data[[quo_name(preXres)]] / 
+                                     .data[[quo_name(predictor_sq)]]) %>%
+    arrange(!!group) %>%
+    ungroup %>%
+    distinct(!!group,.data[[!!beta_group_predictor]])
+  beta_cyl
+}
+```
+
+Test the function:
+```{r q3d_test, echo = TRUE}
+# beta_cyl_disp
+beta1_dplyr = compute_reg_coef_dplyr(df, mpg, disp, cyl)
+
+# beta_cyl_hp
+beta2_dplyr = compute_reg_coef_dplyr(df, mpg, hp, cyl)
+
+# beta_cyl_wt
+beta3_dplyr = compute_reg_coef_dplyr(df, mpg, wt, cyl)
+
+# Compare the difference between results in (a)
+c(max(beta1_dplyr$beta_cyl_disp - beta_cyl[,2]),
+  max(beta2_dplyr$beta_cyl_hp - beta_cyl[,3]),
+  max(beta3_dplyr$beta_cyl_wt - beta_cyl[,4]))
+```
